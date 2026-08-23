@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<title>Guld — Signaldashboard</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: #f4f5f7;
+    color: #1a1a1a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  .header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+  }
+  .header h1 { font-size: 22px; margin: 0 0 4px 0; }
+  .header p { margin: 0; color: #666; font-size: 13px; max-width: 620px; }
+  .badge-date {
+    background: #1a1a1a; color: #fff; font-size: 12px; font-weight: 600;
+    padding: 6px 12px; border-radius: 20px; white-space: nowrap;
+  }
+  .top-grid {
+    display: grid; grid-template-columns: 300px 1fr; gap: 16px; margin-bottom: 18px;
+  }
+  @media (max-width: 760px) { .top-grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #fff; border: 1px solid #e2e4e9; border-radius: 12px;
+    padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .score-card { text-align: center; }
+  .score-card .symbol { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .score-card .symbol b { color: #1a1a1a; }
+  .gauge-label {
+    display: inline-block; padding: 6px 18px; border-radius: 20px;
+    font-weight: 700; font-size: 15px; margin: 8px 0 4px 0;
+  }
+  .bullish-bg { background: #E8ECFF; color: #3730E0; }
+  .bearish-bg { background: #FBE7E7; color: #B3261E; }
+  .neutral-bg { background: #EEEEEE; color: #555; }
+  .score-num { font-size: 34px; font-weight: 800; margin: 4px 0; }
+  .subscore-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;
+  }
+  .subscore { background: #f7f8fa; border-radius: 8px; padding: 8px; font-size: 11px; }
+  .subscore .k { color: #888; margin-bottom: 3px; }
+  .subscore .v { font-weight: 700; font-size: 13px; }
+  .pill {
+    display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 10.5px; font-weight: 700;
+  }
+  .pill.bull { background: #3730E0; color: #fff; }
+  .pill.bear { background: #C2413A; color: #fff; }
+  .pill.neut { background: #999; color: #fff; }
+  .chart-card canvas { max-height: 200px; }
+  .chart-card h3 { margin: 0 0 10px 0; font-size: 14px; color: #333; }
+  .categories {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  @media (max-width: 760px) { .categories { grid-template-columns: 1fr; } }
+  .cat-card h3 {
+    margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: #444; border-bottom: 1px solid #eee; padding-bottom: 8px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: #999; font-weight: 600; font-size: 10.5px; padding: 4px 4px; text-transform: uppercase; }
+  td { padding: 6px 4px; border-top: 1px solid #f0f0f0; vertical-align: middle; }
+  td.metric { font-weight: 600; }
+  td.val { color: #333; white-space: nowrap; }
+  td.src { color: #999; font-size: 10.5px; white-space: nowrap; }
+  .footnote { font-size: 11px; color: #999; margin-top: 20px; line-height: 1.6; }
+  .footnote a { color: #666; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div>
+      <h1>Guld — Signaldashboard</h1>
+      <p>Byggd i EdgeFinder-stil (a1trading.com/edgefinder) men med de verifierade siffrorna från din löpande guld-rapport (Guld_Rapport_MASTER.pdf) — ingen live-koppling, manuell ögonblicksbild.</p>
+    </div>
+    <div class="badge-date">Data t.o.m. 21 aug 2026</div>
+  </div>
+
+  <div class="top-grid">
+    <div class="card score-card">
+      <div class="symbol">Symbol: <b>GOLD</b></div>
+      <div class="gauge-label bullish-bg" id="overallLabel">BULLISH</div>
+      <div class="score-num" id="overallScore">+8</div>
+      <div style="font-size:11px;color:#999;">av möjliga -22 till +22 (egen sammanräkning, se metodnot)</div>
+      <div class="subscore-grid">
+        <div class="subscore"><div class="k">Institutionellt (COT)</div><div class="v"><span class="pill bull">BULLISH</span></div></div>
+        <div class="subscore"><div class="k">Fundamenta (räntor/DXY)</div><div class="v"><span class="pill bull">BULLISH</span></div></div>
+        <div class="subscore"><div class="k">Teknisk (RSI multi-TF)</div><div class="v"><span class="pill bear">VARNING</span></div></div>
+        <div class="subscore"><div class="k">Crowd / kontraindikator</div><div class="v"><span class="pill bear">BEARISH</span></div></div>
+      </div>
+    </div>
+
+    <div class="card chart-card">
+      <h3>Bias-utveckling enligt rapportens ändringslogg</h3>
+      <canvas id="historyChart"></canvas>
+      <div style="font-size:10.5px;color:#999;margin-top:6px;">Egen förenklad skala (-2 till +3) baserad på hur biasen formulerats vid varje uppdatering — inte ett EdgeFinder-score.</div>
+    </div>
+  </div>
+
+  <div class="categories">
+
+    <div class="card cat-card">
+      <h3>Institutionell aktivitet (COT)</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">Non-Comm.-ekv. %Long</td><td class="val">88,5% (+3,1pp v/v)</td><td><span class="pill bull">BULL</span></td><td class="src">Avsn. 1</td></tr>
+        <tr><td class="metric">Managed Money %Long (råsiffra)</td><td class="val">93,9%</td><td><span class="pill bull">BULL</span></td><td class="src">Avsn. 1</td></tr>
+        <tr><td class="metric">MM Net v/v</td><td class="val">+10 971</td><td><span class="pill bull">BULL</span></td><td class="src">Avsn. 1</td></tr>
+      </table>
+    </div>
+
+    <div class="card cat-card">
+      <h3>Realräntor &amp; Fed-politik</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">10Y TIPS realränta</td><td class="val">2,40-2,43% (från 2,47%)</td><td><span class="pill bull">BULL</span></td><td class="src">Avsn. 10C</td></tr>
+        <tr><td class="metric">Nominell 10Y</td><td class="val">4,63-4,69%</td><td><span class="pill neut">NEUTR</span></td><td class="src">Avsn. 10C</td></tr>
+        <tr><td class="metric">30-års ränta</td><td class="val">5,31% (19-årshögsta)</td><td><span class="pill bull">BULL</span></td><td class="src">Bevisl. 10</td></tr>
+        <tr><td class="metric">Treasury-återköp</td><td class="val">Fördubblade (19 aug)</td><td><span class="pill bull">BULL</span></td><td class="src">Bevisl. 10</td></tr>
+      </table>
+    </div>
+
+    <div class="card cat-card">
+      <h3>Dollar (DXY)</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">DXY</td><td class="val">98,885 (brutet stöd)</td><td><span class="pill bull">BULL</span></td><td class="src">Avsn. 13</td></tr>
+      </table>
+    </div>
+
+    <div class="card cat-card">
+      <h3>Inflation</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">CPI YoY</td><td class="val">3,4% (konsensus)</td><td><span class="pill neut">NEUTR</span></td><td class="src">12 aug</td></tr>
+        <tr><td class="metric">Core CPI YoY</td><td class="val">2,5% (konsensus)</td><td><span class="pill neut">NEUTR</span></td><td class="src">12 aug</td></tr>
+        <tr><td class="metric">PPI YoY</td><td class="val">0,0% (vänt 0,2%)</td><td><span class="pill bull">BULL</span></td><td class="src">13 aug</td></tr>
+        <tr><td class="metric">Core PPI</td><td class="val">0,2% (vänt 0,3%)</td><td><span class="pill bull">BULL</span></td><td class="src">13 aug</td></tr>
+      </table>
+    </div>
+
+    <div class="card cat-card">
+      <h3>Arbetsmarknad</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">NFP</td><td class="val">-23K (vänt +85K)</td><td><span class="pill bull">BULL</span></td><td class="src">7 aug</td></tr>
+        <tr><td class="metric">Unemployment rate</td><td class="val">4,1%</td><td><span class="pill neut">NEUTR</span></td><td class="src">7 aug</td></tr>
+        <tr><td class="metric">Jobless Claims</td><td class="val">209K (upp fr. 199K)</td><td><span class="pill bull">BULL</span></td><td class="src">13 aug</td></tr>
+      </table>
+    </div>
+
+    <div class="card cat-card">
+      <h3>Geopolitik</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">Iran-konflikt</td><td class="val">Eskalerar (kompensationskrav)</td><td><span class="pill bull">BULL</span></td><td class="src">9 aug</td></tr>
+      </table>
+    </div>
+
+    <div class="card cat-card">
+      <h3>Centralbanker &amp; ETF-flöden</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">Centralbanksköp Q2</td><td class="val">289 ton (+74% å/å)</td><td><span class="pill bull">BULL</span></td><td class="src">Avsn. 10C</td></tr>
+        <tr><td class="metric">GLD/IAU-flöden</td><td class="val">-1,62 mdr USD (utflöde)</td><td><span class="pill bear">BEAR</span></td><td class="src">Avsn. 10C</td></tr>
+      </table>
+    </div>
+
+    <div class="card cat-card">
+      <h3>Sentiment / Crowd (kontraindikator)</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">%Long-extremitet</td><td class="val">Närmar historiska extremer</td><td><span class="pill bear">BEAR</span></td><td class="src">Avsn. 1/16</td></tr>
+      </table>
+    </div>
+
+    <div class="card cat-card" style="grid-column: 1 / -1;">
+      <h3>Teknisk struktur (RSI multi-tidsram + prisnivåer)</h3>
+      <table>
+        <tr><th>Mått</th><th>Nuvarande</th><th>Signal</th><th>Datum</th></tr>
+        <tr><td class="metric">RSI månad</td><td class="val">90,72 (extremt)</td><td><span class="pill bear">VARNING</span></td><td class="src">21 aug</td></tr>
+        <tr><td class="metric">RSI dag</td><td class="val">84,95 (extremt)</td><td><span class="pill bear">VARNING</span></td><td class="src">21 aug</td></tr>
+        <tr><td class="metric">RSI vecka</td><td class="val">56,23 (neutralt)</td><td><span class="pill neut">NEUTR</span></td><td class="src">21 aug</td></tr>
+        <tr><td class="metric">Pris vs motståndskluster</td><td class="val">~$4 525 vs $4 841-5 419 (v) / ~$4 890 (m)</td><td><span class="pill neut">VARNING</span></td><td class="src">Bilaga C</td></tr>
+      </table>
+    </div>
+
+  </div>
+
+  <div class="footnote">
+    Metodnot: BULL/BEAR/NEUTR-taggarna ovan är hämtade direkt från slutsatserna i respektive avsnitt av din guld-rapport, inte en oberoende algoritm. Totalscore = antal BULL minus antal BEAR (22 bevakade rader denna vecka). Detta är en manuell ögonblicksbild — uppdatera genom att be mig bygga om sidan nästa gång rapporten ändras. Data är inte hämtad live från a1trading.com/edgefinder; formatet är inspirerat av deras layout, siffrorna kommer uteslutande från din egen rapport och dina delade charts.
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+  const ctx = document.getElementById('historyChart').getContext('2d');
+  const labels = ['3 aug', '7 aug', '10 aug', '13 aug', '19 aug', '21 aug'];
+  const data = [-1, 1, 1, 2, 3, 2];
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: data.map(v => v > 0 ? '#3730E0' : (v < 0 ? '#C2413A' : '#999')),
+        borderRadius: 4,
+        barPercentage: 0.6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: -2, max: 3, ticks: { stepSize: 1 } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+</script>
+</body>
+</html>
